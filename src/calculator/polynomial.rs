@@ -1,10 +1,11 @@
 use std::{error, io};
 
-use peroxide::fuga::{LinearAlgebra, Scalable, Shape::Col, matrix};
+use peroxide::fuga::{LinearAlgebra, Scalable, Shape::Col, matrix, nearly_eq};
 
 /// Get the points by (i, v), where i is the index of the message
 /// and v is the value of the message
 pub fn solve_by_index(points: &Vec<String>) -> Result<String, Box<dyn error::Error>> {
+    if points.is_empty() { return Ok("[No points entered]".to_string()) }
     let (x_vals, y_vals) = get_points_by_index(points)?;
     let solved = solve_from_points(x_vals, y_vals)?;
     Ok(format_solve(solved))
@@ -17,7 +18,7 @@ fn get_points_by_index(points: &Vec<String>) -> Result<(Vec<f64>, Vec<f64>), Box
     Ok((x_vals, y_vals))
 }
 
-/// Generate the equation that satisfies the points in (x, y)
+/// Generate the coeficients of the equation that satisfies the points in (x, y)
 /// 
 /// Reference: https://bueler.github.io/numerical/assets/slides/F24/polynonewt.pdf
 fn solve_from_points(x_vals: Vec<f64>, y_vals: Vec<f64>) -> io::Result<Vec<f64>>{
@@ -39,53 +40,8 @@ fn solve_from_points(x_vals: Vec<f64>, y_vals: Vec<f64>) -> io::Result<Vec<f64>>
     Ok(v.into_vec())
 }
 
-fn get_pow_x(n: usize) -> String {
-    if n == 0 { "".to_string() }
-    else if n == 1 { "x".to_string() }
-    else { format!("x^{}", n) }
-}
 
-fn format_exp(exp: f64, add_plus_sign: bool) -> String {
-    let is_integer = exp.trunc() == exp;
-    let res: String;
-
-    if is_integer { 
-        if exp == 1.0 {
-            res = String::new()
-        } else {
-            res = (exp as i64).to_string();
-        }
-    } else { 
-        res = (exp as f32).to_string();
-    }
-
-    if add_plus_sign && exp > 0.0 {
-        "+".to_string() + &res
-    } else {
-        res
-    }
-}
-
-fn insert_term(res: &mut String, exp: f64, n: usize) {
-    if exp == 0.0 { 
-        return; 
-    } 
-
-    if res.is_empty() {
-        res.push_str(&format!(
-            "{}{}", 
-            format_exp(exp, false),
-            get_pow_x(n)
-        ))
-    } else {
-        res.push_str(&format!(
-            "{}{}",
-            format_exp(exp, true),
-            get_pow_x(n)
-        ));
-    }
-}
-
+/// Formats the coefficients into a properly formatted string
 fn format_solve(exponents: Vec<f64>) -> String {
     let mut n = exponents.len();
     let mut res = String::new();
@@ -101,3 +57,61 @@ fn format_solve(exponents: Vec<f64>) -> String {
 
     res
 }
+
+fn insert_term(res: &mut String, exp: f64, n: usize) {
+    if nearly_eq(exp, 0.0) { 
+        return; 
+    } 
+
+    if res.is_empty() {
+        res.push_str(&format!(
+            "{}{}", 
+            format_exp(exp, false, n==0),
+            get_pow_x(n)
+        ))
+    } else {
+        res.push_str(&format!(
+            "{}{}",
+            format_exp(exp, true, n==0),
+            get_pow_x(n)
+        ));
+    }
+}
+
+fn get_pow_x(n: usize) -> String {
+    if n == 0 { "".to_string() }
+    else if n == 1 { "x".to_string() }
+    else { format!("x^{}", n) }
+}
+
+/// Check if it is an integer using `peroxide::fuga::nearly_eq`
+fn is_integer(exp: f64) -> bool {
+    nearly_eq(exp, exp.round())
+}
+
+fn format_exp(exp: f64, add_plus_sign: bool, is_last_element: bool) -> String {
+    // checks 7 dp for integerness
+    let res: String;
+
+    if is_integer(exp) { 
+        let exp = exp.round() as i64;
+
+        if !is_last_element && exp == 1 {
+            res = String::new()
+        } else if !is_last_element && exp == -1 {
+            res = "-".to_string()
+        } else {
+            res = exp.to_string();
+        }
+    
+    } else { 
+        res = format!("{:.7}", exp);
+    }
+
+    if add_plus_sign && exp > 0.0 {
+        "+".to_string() + &res.to_string()
+    } else {
+        res
+    }
+}
+
