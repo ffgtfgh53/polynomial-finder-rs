@@ -2,26 +2,27 @@ use std::{error, io};
 
 use peroxide::fuga::{LinearAlgebra, Scalable, Shape::Col, matrix, nearly_eq};
 
+use crate::calculator::float_parser;
+
 /// Get the points by (i, v), where i is the index of the message
 /// and v is the value of the message
-pub fn solve_by_index(points: &Vec<String>) -> Result<String, Box<dyn error::Error>> {
+pub fn _solve_by_index(points: &Vec<String>) -> Result<String, Box<dyn error::Error>> {
     if points.is_empty() { return Ok("[No points entered]".to_string()) }
-    let (x_vals, y_vals) = get_points_by_index(points)?;
-    let solved = solve_from_points(x_vals, y_vals)?;
+    let (x_vals, y_vals) = float_parser::_get_points_by_index(points)?;
+    let solved = solve_from_points((x_vals, y_vals))?;
     Ok(format_solve(solved))
 }
 
-fn get_points_by_index(points: &Vec<String>) -> Result<(Vec<f64>, Vec<f64>), Box<dyn error::Error>> {
-    let x_vals = (0..points.len()).map(|val| val as f64).collect();
-    let y_vals: Vec<f64> = points.iter().map(|val| val.parse::<f64>()).collect::<Result<_, _>>()?;
-
-    Ok((x_vals, y_vals))
+pub fn solve_by_points(points: &Vec<[f64;2]>) -> Result<String, Box<dyn error::Error>> {
+    if points.is_empty() { return Ok("[No points entered]".to_string()) }
+    let solved = solve_from_points(float_parser::split_points(points))?;
+    Ok(format_solve(solved))
 }
 
 /// Generate the coeficients of the equation that satisfies the points in (x, y)
 /// 
 /// Reference: https://bueler.github.io/numerical/assets/slides/F24/polynonewt.pdf
-fn solve_from_points(x_vals: Vec<f64>, y_vals: Vec<f64>) -> io::Result<Vec<f64>>{
+fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> io::Result<Vec<f64>>{
     let n = x_vals.len();
     if n != y_vals.len() { 
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "mismatch in length for x_vals and y_vals"))

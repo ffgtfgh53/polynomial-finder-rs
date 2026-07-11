@@ -19,6 +19,18 @@ fn main() -> io::Result<()> {
     ratatui::run(|t| App::default().run(t))
 }
 
+#[derive(Debug, Default)]
+struct PopupState {
+    /// Text to show on popup box
+    message: String,
+    /// Mode before the popup
+    pre_popup_mode: Mode,
+    /// Title of the popup
+    title: String,
+    /// Color of popup border
+    color: Style,
+}
+
 /// App holds the state of the application
 #[derive(Debug, Default)]
 struct App {
@@ -27,11 +39,11 @@ struct App {
     /// Current input mode
     mode: Mode,
     /// History of recorded messages
-    messages: Vec<String>,
+    messages: Vec<[f64;2]>,
     /// State of the List widget containing messages
     message_widget_state: ListState,
-    /// Text to show on popup box
-    popup_message: String
+    /// State of the popup
+    popup_state: PopupState
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -87,13 +99,16 @@ impl App {
         self.mode = Mode::Normal
     }
 
-    fn start_popup(&mut self, message: String) {
-        self.popup_message = message;
+    fn start_popup(&mut self, title: String, message: String, border_color: Style) {
+        self.popup_state.title = title;
+        self.popup_state.message = message;
+        self.popup_state.pre_popup_mode = self.mode;
+        self.popup_state.color = border_color;
         self.mode = Mode::Popup
     }
 
     fn stop_popup(&mut self) {
-        self.mode = Mode::Normal
+        self.mode = self.popup_state.pre_popup_mode
     }
 
     fn start_edit(&mut self) {
@@ -125,18 +140,36 @@ impl App {
         let msg = self.input.value_and_reset();
 
         if self.mode == Mode::Input {
-            self.messages.push(msg)
+            if let Some(point) = calculator::float_parser::get_points(&msg) {
+                self.messages.push(point);
+            } else {
+                self.start_popup(
+                    "Input Error".to_string(), 
+                    format!("Cannot get point from input '{}'", msg), 
+                    Color::Red.into()
+                );
+            }
         }
     }
 
     fn find_polynomial(&mut self) {
-        use calculator::polynomial::solve_by_index;
-        let message = match solve_by_index(&self.messages) {
-            Ok(equation) => equation,
-            Err(err) => format!("An error occured: {:}", err),
+        use calculator::polynomial::solve_by_points;
+        match solve_by_points(&self.messages) {
+            Ok(equation) => {
+                self.start_popup(
+                    "Equation".to_string(), 
+                    equation, 
+                    Color::Green.into()
+                )
+            },
+            Err(err) => {
+                self.start_popup(
+                    "Calculation error".to_string(), 
+                    format!("An error occured: {:}", err), 
+                    Color::Red.into()
+                )
+            },
         };
-
-        self.start_popup(message);
     }
 
     fn render(&mut self, frame: &mut Frame) {
@@ -148,7 +181,10 @@ impl App {
         ])
         .areas(area);
 
-        let popup_area = area.centered(Constraint::Percentage(60), Constraint::Percentage(20));
+        let popup_area = area.centered(
+            Constraint::Percentage(60), 
+            Constraint::Length((area.height / 5).max(5)) // max(3, 20%)
+        );
 
         self.render_header(frame, header_area);
         self.render_input(frame, input_area);
@@ -238,8 +274,7 @@ impl App {
         let messages = self
             .messages
             .iter()
-            .enumerate()
-            .map(|(i, message)| format!("{}: {}", i, message));
+            .map(|[x, y]| format!("({:.5}, {:.5})", x, y));
 
         let message_widget = List::new(messages)
             .block(message_block)
@@ -256,10 +291,10 @@ impl App {
         // Clear the area
         frame.render_widget(Clear, area);
         let popup_block = Block::bordered()
-            .border_style(Color::Green)
-            .title("Equation")
+            .border_style(self.popup_state.color)
+            .title(self.popup_state.title.clone())
             .padding(Padding::proportional(1));
-        let popup_message = Paragraph::new(self.popup_message.clone())
+        let popup_message = Paragraph::new(self.popup_state.message.clone())
             .centered()
             .block(popup_block);
         frame.render_widget(popup_message, area);
