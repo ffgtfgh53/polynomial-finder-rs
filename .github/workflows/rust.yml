@@ -23,4 +23,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: build-output
-        path: target/release/sliding-puzzle
+        path: target/release/polynomial-finder-rs
