@@ -1,31 +1,29 @@
-use std::{error, io};
-
 use peroxide::fuga::{LinearAlgebra, Scalable, Shape::Col, matrix, nearly_eq};
 
 use crate::calculator::float_parser;
 
 /// Get the points by (i, v), where i is the index of the message
 /// and v is the value of the message
-pub fn _solve_by_index(points: &Vec<String>) -> Result<String, Box<dyn error::Error>> {
+pub fn _solve_by_index(points: &Vec<String>) -> Result<String, String> {
     if points.is_empty() { return Ok("[No points entered]".to_string()) }
-    let (x_vals, y_vals) = float_parser::_get_points_by_index(points)?;
+    let (x_vals, y_vals) = float_parser::_get_points_by_index(points).map_err(|_| "Number parse error".to_string())?;
     let solved = solve_from_points((x_vals, y_vals))?;
-    Ok(format_solve(solved))
+    format_solve(solved)
 }
 
-pub fn solve_by_points(points: &Vec<[f64;2]>) -> Result<String, Box<dyn error::Error>> {
+pub fn solve_by_points(points: &Vec<[f64;2]>) -> Result<String, String> {
     if points.is_empty() { return Ok("[No points entered]".to_string()) }
     let solved = solve_from_points(float_parser::split_points(points))?;
-    Ok(format_solve(solved))
+    format_solve(solved)
 }
 
 /// Generate the coeficients of the equation that satisfies the points in (x, y)
 /// 
 /// Reference: https://bueler.github.io/numerical/assets/slides/F24/polynonewt.pdf
-fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> io::Result<Vec<f64>>{
+fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Vec<f64>, String>{
     let n = x_vals.len();
     if n != y_vals.len() { 
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "mismatch in length for x_vals and y_vals"))
+        return Err("mismatch in length for x_vals and y_vals".to_string());
     };
 
     let mut a = matrix(vec![1].repeat(n), n, 1, Col);
@@ -43,12 +41,12 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> io::Result<Vec<f
 
 
 /// Formats the coefficients into a properly formatted string
-fn format_solve(exponents: Vec<f64>) -> String {
+fn format_solve(exponents: Vec<f64>) -> Result<String, String> {
     let mut n = exponents.len();
     let mut res = String::new();
 
     for exp in exponents.iter().rev() {
-        insert_term(&mut res, *exp, n-1);
+        insert_term(&mut res, *exp, n-1)?;
         n -= 1
     }
 
@@ -56,26 +54,23 @@ fn format_solve(exponents: Vec<f64>) -> String {
         res.push('0');
     }
 
-    res
+    res.insert_str(0, "f(x)=");
+
+    Ok(res)
 }
 
-fn insert_term(res: &mut String, exp: f64, n: usize) {
-    if nearly_eq(exp, 0.0) { 
-        return; 
-    } 
-
-    if res.is_empty() {
-        res.push_str(&format!(
-            "{}{}", 
-            format_exp(exp, false, n==0),
-            get_pow_x(n)
-        ))
+fn insert_term(res: &mut String, exp: f64, n: usize) -> Result<(), String>{
+    if exp.is_nan() {
+        Err("No valid polynomial possible".to_string())
+    } else if nearly_eq(exp, 0.0) { 
+        Ok(())
     } else {
         res.push_str(&format!(
-            "{}{}",
-            format_exp(exp, true, n==0),
+            "{}{}", 
+            format_exp(exp, !res.is_empty(), n==0),
             get_pow_x(n)
         ));
+        Ok(())
     }
 }
 

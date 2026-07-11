@@ -165,7 +165,7 @@ impl App {
             Err(err) => {
                 self.start_popup(
                     "Calculation error".to_string(), 
-                    format!("An error occured: {:}", err), 
+                    format!("An error occured: {}", err), 
                     Color::Red.into()
                 )
             },

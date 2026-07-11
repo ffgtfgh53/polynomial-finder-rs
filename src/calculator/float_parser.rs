@@ -2,7 +2,7 @@ use std::error;
 use regex::Regex;
 
 pub fn get_points(input: &String) -> Option<[f64;2]> {
-    let re = Regex::new(r"(\d+(\.\d+)?)[^\d\.]+(\d+(\.\d+)?)").unwrap(); // should always compile properly
+    let re = Regex::new(r"(-?\d+(\.\d+)?)[^\d\.]+(-?\d+(\.\d+)?)").unwrap(); // should always compile properly
     let cap = re.captures(input)?;
 
     Some([
