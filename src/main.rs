@@ -69,6 +69,7 @@ impl App {
                         KeyCode::Char('e') => self.start_edit(),
                         KeyCode::Char('p') => self.find_polynomial(),
                         KeyCode::Char('c') => self.find_circle(),
+                        KeyCode::Char('a') => self.find_area(),
                         KeyCode::Char('d') => self.messages.clear(),
                         KeyCode::Char('q') => return Ok(()), // exit
                         _ => {}
@@ -192,6 +193,26 @@ impl App {
         }
     }
 
+    fn find_area(&mut self) {
+        use calculator::area::solve_by_points;
+        match solve_by_points(&self.messages) {
+            Ok(equation) => {
+                self.start_popup(
+                    "Area".to_string(),
+                    equation, 
+                    Color::Green.into());
+            },
+            Err(err) => {
+                self.start_popup(
+                    "Calculation error".to_string(), 
+                    format!("An error occured: {}", err), 
+                    Color::Red.into()
+                )
+            },
+        }
+    }
+
+
     fn render(&mut self, frame: &mut Frame) {
         let area = frame.area();
         let [header_area, input_area, messages_area] = Layout::vertical([
@@ -234,6 +255,8 @@ impl App {
                 "find polynomial".on_light_blue(),
                 " c ".bold(),
                 "find circle".on_light_blue(),
+                " a ".bold(),
+                "find area".on_light_blue(),
             ],
             Mode::Input => vec![
                 " Esc ".bold(),
