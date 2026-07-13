@@ -16,7 +16,7 @@ pub fn solve_by_points(points: &Vec<[f64;2]>) -> Result<String, String> {
 fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Polynomial, String>{
     let n = x_vals.len();
     if n != y_vals.len() { 
-        return Err("mismatch in length for x_vals and y_vals".to_string());
+        Err("mismatch in length for x_vals and y_vals".to_string())?;
     };
 
     let mut a = matrix([1].repeat(n), n, 1, Col);

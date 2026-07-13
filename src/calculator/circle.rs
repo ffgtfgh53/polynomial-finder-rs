@@ -56,15 +56,39 @@ impl Display for Circle {
     }
 }
 
+impl Circle {
+    /// Return true if the point lies on the circle
+    pub fn check_point(&self, [x, y]: [f64;2]) -> bool {
+        let [x1, y1] = self.midpoint;
+        // Check if substitution matches to +- 3 * EPSILON
+        (
+            (x - x1).powi(2) 
+            + (y - y1).powi(2) 
+            - self.radius.powi(2)
+        ).abs() < self.radius * 0.001 // Uncertainty of 0.1% (or 0.001% because of the ^2?)
+    }
+}
+
 pub fn solve_by_points(points: &Vec<[f64; 2]>) -> Result<String, String> {
-    let data = solve_from_points(float_parser::split_points(points))?;
-    Ok(data.to_string())
+    let (points, to_check) = points
+        .split_at_checked(3)
+        .ok_or("Need > 3 points to calculate circle".to_string())?;
+
+    let circle = solve_from_points(float_parser::split_points(points))?;
+
+    for point in to_check {
+        if !circle.check_point(*point) {
+            Err("No circle that satisfies all points")?
+        }
+    }
+
+    Ok(circle.to_string())
 }
 
 /// Reference: https://planetcalc.com/8116/
 fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Circle, String>{
-    if x_vals.len() != 3 && y_vals.len() != 3 {
-        return Err("Wrong number of points given (required exactly 3)".to_string());
+    if x_vals.len() != y_vals.len() {
+        Err("mismatch in length for x_vals and y_vals".to_string())?;
     }
 
     let mut a_data = Vec::with_capacity(9);
