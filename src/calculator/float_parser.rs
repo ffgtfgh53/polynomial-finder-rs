@@ -15,7 +15,7 @@ pub fn display_point([x, y]: [f64;2]) -> String {
     format!("({}, {})", display_float(x), display_float(y))
 }
 
-pub fn get_points(input: &String) -> Option<[f64;2]> {
+pub fn get_points(input: &str) -> Option<[f64;2]> {
     let re = Regex::new(r"(-?\d+(\.\d+)?)[^\d\.]+(-?\d+(\.\d+)?)").unwrap(); // should always compile properly
     let cap = re.captures(input)?;
 
@@ -27,20 +27,21 @@ pub fn get_points(input: &String) -> Option<[f64;2]> {
 }
 
 /// Splits a Vec of points to 2 Vec of x and y
-pub fn split_points(points: &Vec<[f64;2]>) -> (Vec<f64>, Vec<f64>) {
+pub fn split_points(points: &[[f64;2]]) -> (Vec<f64>, Vec<f64>) {
     let x_vals = points.iter().map(|point| point[0]).collect();
     let y_vals = points.iter().map(|point| point[1]).collect();
 
     (x_vals, y_vals)
 }
 
-pub fn _get_points_by_index(points: &Vec<String>) -> Result<(Vec<f64>, Vec<f64>), Box<dyn error::Error>> {
+pub fn _get_points_by_index(points: &[String]) -> Result<(Vec<f64>, Vec<f64>), Box<dyn error::Error>> {
     let x_vals = (0..points.len()).map(|val| val as f64).collect();
     let y_vals = points.iter().map(|val| val.parse::<f64>()).collect::<Result<_, _>>()?;
 
     Ok((x_vals, y_vals))
 }
 
+#[allow(dead_code)]
 pub mod coefficients {
     use crate::calculator::float_parser;
 
@@ -66,9 +67,7 @@ pub mod coefficients {
     }
 
     pub fn format_exp(exp: f64, add_plus_sign: bool, is_last_element: bool) -> String {
-        let res: String;
-
-        res = match exp {
+        let res = match exp {
             1.0 if !is_last_element => String::new(),
             -1.0 if !is_last_element => String::from("-"),
             exp => float_parser::display_float(exp)

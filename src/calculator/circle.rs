@@ -5,7 +5,7 @@ use peroxide::fuga::{LinearAlgebra, MutFP, Shape::Col, matrix};
 use crate::calculator::float_parser;
 
 pub fn solve_by_points(points: &Vec<[f64; 2]>) -> Result<String, String> {
-    let data = solve_from_points(float_parser::split_points(&points))?;
+    let data = solve_from_points(float_parser::split_points(points))?;
     format_solve(data)
 }
 
@@ -25,14 +25,14 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Vec<f64>,
     let a = matrix(a_data, 3, 3, Col);
 
     let b_data = zip(x_vals, y_vals)
-        .map(|(x, y)| -1.0 * (x.powi(2) + y.powi(2)))
+        .map(|(x, y)| -(x.powi(2) + y.powi(2)))
         .collect();
 
     let b = matrix(b_data, 3, 1, Col);
 
     let v = a.inv() * b;
 
-    return Ok(v.into_vec());
+    Ok(v.into_vec())
 }
 
 fn format_solve(data: Vec<f64>) -> Result<String, String> {
