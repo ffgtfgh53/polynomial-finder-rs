@@ -3,7 +3,9 @@ use peroxide::fuga::{LinearAlgebra, Polynomial, Scalable, Shape::Col, matrix};
 use crate::calculator::float_parser;
 
 pub fn solve_by_points(points: &Vec<[f64;2]>) -> Result<String, String> {
-    if points.is_empty() { return Ok("[No points entered]".to_string()) }
+    if points.is_empty() { 
+        Err("Need > 0 points to calculate".to_string())?
+    }
     let solved = solve_from_points(float_parser::split_points(points))?;
     Ok("f(x) = ".to_string() + &solved.to_string())
 }
@@ -28,12 +30,18 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Polynomia
     let v = a.inv() * b;
 
     // Reduce precision to allow coercion to integers
-    let v = v
+    let v: Vec<f64> = v
         .into_vec()
         .iter()
         .rev()
         .map(|c| *c as f32 as f64)
         .collect();
+
+    for val in v.iter() {
+        if val.is_nan() {
+            Err("No suitable polynomial found".to_string())?
+        }
+    }
 
     Ok(Polynomial::new(v))
 }
