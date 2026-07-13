@@ -1,6 +1,20 @@
 use std::error;
 use regex::Regex;
 
+pub fn display_float(f: f64) -> String {
+    let formatted = (f as f32).to_string();
+    let trimmed = formatted.trim_end_matches('0').trim_end_matches('.');
+    if trimmed.is_empty() {
+        "0".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+pub fn display_point([x, y]: [f64;2]) -> String {
+    format!("({}, {})", display_float(x), display_float(y))
+}
+
 pub fn get_points(input: &String) -> Option<[f64;2]> {
     let re = Regex::new(r"(-?\d+(\.\d+)?)[^\d\.]+(-?\d+(\.\d+)?)").unwrap(); // should always compile properly
     let cap = re.captures(input)?;
@@ -25,4 +39,46 @@ pub fn _get_points_by_index(points: &Vec<String>) -> Result<(Vec<f64>, Vec<f64>)
     let y_vals = points.iter().map(|val| val.parse::<f64>()).collect::<Result<_, _>>()?;
 
     Ok((x_vals, y_vals))
+}
+
+pub mod coefficients {
+    use crate::calculator::float_parser;
+
+    pub fn insert_term(res: &mut String, exp: f64, n: usize) -> Result<(), String>{
+        if exp.is_nan() {
+            Err("No valid polynomial possible".to_string())
+        } else if exp as f32 == 0.0 { 
+            Ok(())
+        } else {
+            res.push_str(&format!(
+                "{}{}", 
+                format_exp(exp, !res.is_empty(), n==0),
+                get_pow_x(n)
+            ));
+            Ok(())
+        }
+    }
+
+    fn get_pow_x(n: usize) -> String {
+        if n == 0 { "".to_string() }
+        else if n == 1 { "x".to_string() }
+        else { format!("x^{}", n) }
+    }
+
+    pub fn format_exp(exp: f64, add_plus_sign: bool, is_last_element: bool) -> String {
+        let res: String;
+
+        res = match exp {
+            1.0 if !is_last_element => String::new(),
+            -1.0 if !is_last_element => String::from("-"),
+            exp => float_parser::display_float(exp)
+        };
+
+        if add_plus_sign && exp > 0.0 {
+            "+".to_string() + &res.to_string()
+        } else {
+            res
+        }
+    }
+
 }

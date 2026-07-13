@@ -1,4 +1,4 @@
-use peroxide::fuga::{LinearAlgebra, Scalable, Shape::Col, matrix, nearly_eq};
+use peroxide::fuga::{LinearAlgebra, Scalable, Shape::Col, matrix};
 
 use crate::calculator::float_parser;
 
@@ -46,7 +46,7 @@ fn format_solve(exponents: Vec<f64>) -> Result<String, String> {
     let mut res = String::new();
 
     for exp in exponents.iter().rev() {
-        insert_term(&mut res, *exp, n-1)?;
+        float_parser::coefficients::insert_term(&mut res, *exp, n-1)?;
         n -= 1
     }
 
@@ -57,57 +57,5 @@ fn format_solve(exponents: Vec<f64>) -> Result<String, String> {
     res.insert_str(0, "f(x)=");
 
     Ok(res)
-}
-
-fn insert_term(res: &mut String, exp: f64, n: usize) -> Result<(), String>{
-    if exp.is_nan() {
-        Err("No valid polynomial possible".to_string())
-    } else if nearly_eq(exp, 0.0) { 
-        Ok(())
-    } else {
-        res.push_str(&format!(
-            "{}{}", 
-            format_exp(exp, !res.is_empty(), n==0),
-            get_pow_x(n)
-        ));
-        Ok(())
-    }
-}
-
-fn get_pow_x(n: usize) -> String {
-    if n == 0 { "".to_string() }
-    else if n == 1 { "x".to_string() }
-    else { format!("x^{}", n) }
-}
-
-/// Check if it is an integer using `peroxide::fuga::nearly_eq`
-fn is_integer(exp: f64) -> bool {
-    nearly_eq(exp, exp.round())
-}
-
-fn format_exp(exp: f64, add_plus_sign: bool, is_last_element: bool) -> String {
-    // checks 7 dp for integerness
-    let res: String;
-
-    if is_integer(exp) { 
-        let exp = exp.round() as i64;
-
-        if !is_last_element && exp == 1 {
-            res = String::new()
-        } else if !is_last_element && exp == -1 {
-            res = "-".to_string()
-        } else {
-            res = exp.to_string();
-        }
-    
-    } else { 
-        res = format!("{:.7}", exp);
-    }
-
-    if add_plus_sign && exp > 0.0 {
-        "+".to_string() + &res.to_string()
-    } else {
-        res
-    }
 }
 

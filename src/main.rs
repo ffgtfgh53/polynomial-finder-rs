@@ -68,7 +68,8 @@ impl App {
                         KeyCode::Char('i') => self.start_input(),
                         KeyCode::Char('e') => self.start_edit(),
                         KeyCode::Char('p') => self.find_polynomial(),
-                        KeyCode::Char('c') => self.messages.clear(),
+                        KeyCode::Char('c') => self.find_circle(),
+                        KeyCode::Char('d') => self.messages.clear(),
                         KeyCode::Char('q') => return Ok(()), // exit
                         _ => {}
                     },
@@ -157,7 +158,7 @@ impl App {
         match solve_by_points(&self.messages) {
             Ok(equation) => {
                 self.start_popup(
-                    "Equation".to_string(), 
+                    "Polynomial Equation".to_string(), 
                     equation, 
                     Color::Green.into()
                 )
@@ -170,6 +171,25 @@ impl App {
                 )
             },
         };
+    }
+
+    fn find_circle(&mut self) {
+        use calculator::circle::solve_by_points;
+        match solve_by_points(&self.messages) {
+            Ok(equation) => {
+                self.start_popup(
+                    "Circle Equation".to_string(),
+                    equation, 
+                    Color::Green.into());
+            },
+            Err(err) => {
+                self.start_popup(
+                    "Calculation error".to_string(), 
+                    format!("An error occured: {}", err), 
+                    Color::Red.into()
+                )
+            },
+        }
     }
 
     fn render(&mut self, frame: &mut Frame) {
@@ -204,14 +224,16 @@ impl App {
             Mode::Normal => vec![
                 " q ".bold(),
                 "exit".on_blue(),
-                " c ".bold(),
-                "clear points".on_light_blue(),
+                " d ".bold(),
+                "delete all points".on_light_blue(),
                 " i ".bold(),
                 "input points".on_light_blue(),
                 " e ".bold(),
                 "edit points".on_light_blue(),
                 " p ".bold(),
                 "find polynomial".on_light_blue(),
+                " c ".bold(),
+                "find circle".on_light_blue(),
             ],
             Mode::Input => vec![
                 " Esc ".bold(),
@@ -270,11 +292,13 @@ impl App {
         let message_block = Block::bordered()
             .title("Points")
             .border_style(border_style);
+        
+        use calculator::float_parser::display_point;
 
         let messages = self
             .messages
             .iter()
-            .map(|[x, y]| format!("({:.5}, {:.5})", x, y));
+            .map(|[x, y]| display_point([*x, *y]));
 
         let message_widget = List::new(messages)
             .block(message_block)
