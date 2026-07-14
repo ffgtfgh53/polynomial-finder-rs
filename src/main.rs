@@ -15,6 +15,7 @@ use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
 
 mod calculator;
+mod structures;
 
 fn main() -> io::Result<()> {
     ratatui::run(|t| App::default().run(t))
