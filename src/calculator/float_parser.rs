@@ -1,5 +1,3 @@
-use std::error;
-
 use peroxide::fuga::choose_shorter_string;
 use regex::Regex;
 
@@ -31,11 +29,4 @@ pub fn split_points(points: &[[f64;2]]) -> (Vec<f64>, Vec<f64>) {
     let y_vals = points.iter().map(|point| point[1]).collect();
 
     (x_vals, y_vals)
-}
-
-pub fn _get_points_by_index(points: &[String]) -> Result<(Vec<f64>, Vec<f64>), Box<dyn error::Error>> {
-    let x_vals = (0..points.len()).map(|val| val as f64).collect();
-    let y_vals = points.iter().map(|val| val.parse::<f64>()).collect::<Result<_, _>>()?;
-
-    Ok((x_vals, y_vals))
 }
