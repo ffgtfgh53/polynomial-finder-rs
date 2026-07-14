@@ -3,6 +3,9 @@ use itertools::Itertools;
 
 use crate::calculator::float_parser;
 
+/// Return the formatted Area enclosed by the points.
+/// 
+/// Points given in clockwise order will give A >= 0, and vice versa. Formula also applies to self-overlapping polygons.
 pub fn solve_by_points(points: &[[f64;2]]) -> Result<String, String> {
     if points.len() < 3 { 
         Err("Need > 3 points to calculate area".to_string())? 
@@ -12,7 +15,7 @@ pub fn solve_by_points(points: &[[f64;2]]) -> Result<String, String> {
     Ok("A = ".to_string() + &float_parser::display_float(solved))
 }
 
-/// Calculate the area via the shoelace method
+/// Reference: https://en.wikipedia.org/wiki/Shoelace_formula#Triangle_formula
 fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<f64, String>{
     if x_vals.len() != y_vals.len() {
         return Err("x_vals and y_vals have different lengths".to_string())

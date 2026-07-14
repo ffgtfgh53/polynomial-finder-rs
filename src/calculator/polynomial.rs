@@ -1,8 +1,11 @@
 use itertools::Itertools;
-use peroxide::fuga::{LinearAlgebra, Polynomial, Scalable, Shape::Col, matrix};
+use peroxide::fuga::{LinearAlgebra, Polynomial, Scalable, Shape, matrix, poly};
 
 use crate::calculator::float_parser;
 
+/// Return the formatted polynomial that passes through all the points in `points`
+/// 
+/// Errors will be formatted in a String to be displayed
 pub fn solve_by_points(points: &[[f64;2]]) -> Result<String, String> {
     if points.is_empty() { 
         Err("Need > 0 points to calculate".to_string())?
@@ -20,13 +23,13 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Polynomia
         Err("mismatch in length for x_vals and y_vals".to_string())?;
     };
 
-    let mut a = matrix([1].repeat(n), n, 1, Col);
+    let mut a = matrix([1].repeat(n), n, 1, Shape::Col);
     for i in 1..n {
         let col = x_vals.iter().map(|val| val.powi(i as i32)).collect();
         a = a.add_col(&col);
     }
 
-    let b = matrix(y_vals, n, 1, Col);
+    let b = matrix(y_vals, n, 1, Shape::Col);
 
     let v = a.inv() * b;
 
@@ -45,6 +48,6 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Polynomia
         })
         .try_collect()?;
 
-    Ok(Polynomial::new(v))
+    Ok(poly(v))
 }
 

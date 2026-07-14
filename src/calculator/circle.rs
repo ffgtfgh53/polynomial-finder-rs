@@ -1,16 +1,19 @@
-use std::{fmt::Display, iter::zip};
+use std::fmt;
+use std::iter;
 
-use peroxide::fuga::{LinearAlgebra, MutFP, Shape::Col, choose_shorter_string, matrix};
+use peroxide::fuga::{LinearAlgebra, MutFP, Shape, choose_shorter_string, matrix};
 
 use crate::calculator::float_parser;
 
-struct Circle {
-    midpoint: [f64;2],
-    radius: f64,
+#[derive(Debug, Clone, Default)]
+pub struct Circle {
+    pub midpoint: [f64;2],
+    pub radius: f64,
 }
 
-impl Display for Circle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+/// Similar to that of `peroxide::fuga::Polynomial`
+impl fmt::Display for Circle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut result = String::new();
 
         result.push_str("(x");
@@ -57,6 +60,10 @@ impl Display for Circle {
 }
 
 impl Circle {
+    pub fn new(midpoint: [f64;2], radius: f64) -> Self {
+        Self { midpoint, radius }
+    }
+
     /// Return true if the point lies on the circle
     pub fn check_point(&self, [x, y]: [f64;2]) -> bool {
         let [x1, y1] = self.midpoint;
@@ -69,6 +76,7 @@ impl Circle {
     }
 }
 
+/// Return the formatted circle equation that passes through all the points in `points`
 pub fn solve_by_points(points: &[[f64; 2]]) -> Result<String, String> {
     let (points, to_check) = points
         .split_at_checked(3)
@@ -98,13 +106,13 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Circle, S
     a_data.append(&mut vec![0.5, 0.5, 0.5]);
     a_data.mut_map(|n| n * 2.0 );
 
-    let a = matrix(a_data, 3, 3, Col);
+    let a = matrix(a_data, 3, 3, Shape::Col);
 
-    let b_data = zip(x_vals, y_vals)
+    let b_data = iter::zip(x_vals, y_vals)
         .map(|(x, y)| -(x.powi(2) + y.powi(2)))
         .collect();
 
-    let b = matrix(b_data, 3, 1, Col);
+    let b = matrix(b_data, 3, 1, Shape::Col);
 
     let v = (a.inv() * b).into_vec();
 
@@ -114,9 +122,6 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Circle, S
     if x.is_nan() || y.is_nan() || r.is_nan() {
         Err("Error when constructing circle (repeated or colinear points?)".to_string())
     } else {
-        Ok(Circle{ 
-            midpoint: [x, y], 
-            radius: r 
-        })
+        Ok(Circle::new([x, y], r))
     }
 }
