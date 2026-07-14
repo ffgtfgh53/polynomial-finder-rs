@@ -1,8 +1,9 @@
+use itertools::Itertools;
 use peroxide::fuga::{LinearAlgebra, Polynomial, Scalable, Shape::Col, matrix};
 
 use crate::calculator::float_parser;
 
-pub fn solve_by_points(points: &Vec<[f64;2]>) -> Result<String, String> {
+pub fn solve_by_points(points: &[[f64;2]]) -> Result<String, String> {
     if points.is_empty() { 
         Err("Need > 0 points to calculate".to_string())?
     }
@@ -32,16 +33,17 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Polynomia
     // Reduce precision to allow coercion to integers
     let v: Vec<f64> = v
         .into_vec()
-        .iter()
+        .into_iter()
         .rev()
-        .map(|c| *c as f32 as f64)
-        .collect();
-
-    for val in v.iter() {
-        if val.is_nan() {
-            Err("No suitable polynomial found".to_string())?
-        }
-    }
+        .skip_while(|c| c.abs() < f32::EPSILON as f64)
+        .map(|c| {
+            if c.is_nan() { 
+                Err("No suitable polynomial found".to_string()) 
+            } else { 
+                Ok(c as f32 as f64) 
+            }
+        })
+        .try_collect()?;
 
     Ok(Polynomial::new(v))
 }

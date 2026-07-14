@@ -69,7 +69,7 @@ impl Circle {
     }
 }
 
-pub fn solve_by_points(points: &Vec<[f64; 2]>) -> Result<String, String> {
+pub fn solve_by_points(points: &[[f64; 2]]) -> Result<String, String> {
     let (points, to_check) = points
         .split_at_checked(3)
         .ok_or("Need > 3 points to calculate circle".to_string())?;
@@ -112,7 +112,7 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Circle, S
     let r = (x.powi(2) + y.powi(2) - c).sqrt();
 
     if x.is_nan() || y.is_nan() || r.is_nan() {
-        Err("Error when constructing circle (repeated or colinear points".to_string())
+        Err("Error when constructing circle (repeated or colinear points?)".to_string())
     } else {
         Ok(Circle{ 
             midpoint: [x, y], 

@@ -3,7 +3,7 @@ use itertools::Itertools;
 
 use crate::calculator::float_parser;
 
-pub fn solve_by_points(points: &Vec<[f64;2]>) -> Result<String, String> {
+pub fn solve_by_points(points: &[[f64;2]]) -> Result<String, String> {
     if points.len() < 3 { 
         Err("Need > 3 points to calculate area".to_string())? 
     }
