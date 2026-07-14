@@ -3,12 +3,7 @@ extern crate peroxide;
 use std::io;
 
 use ratatui::{
-    DefaultTerminal, 
-    Frame, 
-    crossterm::event::{self, Event, KeyCode}, 
-    layout::{Constraint, Layout, Rect}, 
-    style::{Color, Style, Stylize}, 
-    text::{Line, Text}, widgets::{Block, Clear, List, ListState, Padding, Paragraph}
+    DefaultTerminal, Frame, crossterm::event::{self, Event, KeyCode}, layout::{Constraint, Layout, Rect}, style::{Color, Style, Stylize}, text::{Line, Text}, widgets::{Block, Clear, List, ListState, Padding, Paragraph}
 };
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
@@ -52,6 +47,7 @@ enum Mode {
     Normal,
     Input,
     Edit,
+    Select,
     Popup,
 }
 
@@ -75,7 +71,7 @@ impl App {
                         _ => {}
                     },
                     Mode::Input => match key.code {
-                        KeyCode::Enter => self.push_message(),
+                        KeyCode::Enter => self.insert_point(),
                         KeyCode::Esc => self.stop_input(),
                         _ => {
                             self.input.handle_event(&event);
@@ -85,6 +81,15 @@ impl App {
                         KeyCode::Down => self.scroll_points(-1),
                         KeyCode::Up => self.scroll_points(1),
                         KeyCode::Delete => self.delete_selected_point(),
+                        KeyCode::Char('e') => self.start_input(),
+                        KeyCode::Enter => self.mode = Mode::Select,
+                        KeyCode::Esc => self.stop_edit(),
+                        _ => {}
+                    },
+                    Mode::Select => match key.code {
+                        KeyCode::Up => self.move_point(true),
+                        KeyCode::Down => self.move_point(false),
+                        KeyCode::Enter => self.mode = Mode::Edit,
                         KeyCode::Esc => self.stop_edit(),
                         _ => {}
                     }
@@ -132,34 +137,57 @@ impl App {
         }
     }
 
+    fn move_point(&mut self, up: bool) {
+        let selected = self.message_widget_state.selected_mut();
+        let next;
+        if up {
+            // move index towards 0
+            if selected.unwrap_or(0) == 0 { return };
+            next = selected.unwrap() - 1;
+        } else {
+            // move index towards self.messages.len()
+            let lim = self.messages.len();
+            if selected.unwrap_or(lim) + 1 >= lim { return };
+            next = selected.unwrap() + 1;
+        };
+        self.messages.swap(selected.unwrap(), next);
+         *selected = Some(next)
+    }
+
     fn delete_selected_point(&mut self) {
         let Some(n) = self.message_widget_state.selected() else { return; };
-        // By right should not panic since selected item will always be in range?
+        // Should not panic since selected item should be in range
         self.messages.remove(n);
     }
 
-    fn push_message(&mut self) {
-        let msg = self.input.value_and_reset();
+    fn insert_point(&mut self) {
+        let input = self.input.value_and_reset();
 
         if self.mode == Mode::Input {
-            if let Some(point) = calculator::float_parser::get_points(&msg) {
-                self.messages.push(point);
+            if let Some(point) = calculator::float_parser::get_points(&input) {
+                if let Some(n) = self.message_widget_state.selected() {
+                    self.messages[n] = point;
+                    // Exit 1-time input mode and go back to edit
+                    // Just reset to Edit mode instead of re-init edit
+                    self.mode = Mode::Edit
+                } else {
+                    self.messages.push(point);
+                }
             } else {
                 self.start_popup(
                     "Input Error".to_string(), 
-                    format!("Cannot get point from input '{}'", msg), 
+                    format!("Cannot get point from input '{}'", input), 
                     Color::Red.into()
                 );
             }
         }
     }
 
-    fn find_polynomial(&mut self) {
-        use calculator::polynomial::solve_by_points;
-        match solve_by_points(&self.messages) {
+    fn show_calc_result(&mut self, title: String, result: Result<String, String>) {
+        match result {
             Ok(equation) => {
                 self.start_popup(
-                    "Polynomial Equation".to_string(), 
+                    title,
                     equation, 
                     Color::Green.into()
                 )
@@ -174,42 +202,25 @@ impl App {
         };
     }
 
+    fn find_polynomial(&mut self) {
+        self.show_calc_result(
+            "Polynomial equation".to_string(),
+            calculator::polynomial::solve_by_points(&self.messages)
+        )
+    }
+
     fn find_circle(&mut self) {
-        use calculator::circle::solve_by_points;
-        match solve_by_points(&self.messages) {
-            Ok(equation) => {
-                self.start_popup(
-                    "Circle Equation".to_string(),
-                    equation, 
-                    Color::Green.into());
-            },
-            Err(err) => {
-                self.start_popup(
-                    "Calculation error".to_string(), 
-                    format!("An error occured: {}", err), 
-                    Color::Red.into()
-                )
-            },
-        }
+        self.show_calc_result(
+            "Circle Equation".to_string(),
+            calculator::circle::solve_by_points(&self.messages)
+        )
     }
 
     fn find_area(&mut self) {
-        use calculator::area::solve_by_points;
-        match solve_by_points(&self.messages) {
-            Ok(equation) => {
-                self.start_popup(
-                    "Area".to_string(),
-                    equation, 
-                    Color::Green.into());
-            },
-            Err(err) => {
-                self.start_popup(
-                    "Calculation error".to_string(), 
-                    format!("An error occured: {}", err), 
-                    Color::Red.into()
-                )
-            },
-        }
+        self.show_calc_result(
+            "Area".to_string(),
+            calculator::area::solve_by_points(&self.messages)
+        )
     }
 
 
@@ -237,7 +248,7 @@ impl App {
         let title = Line::from(match self.mode {
             Mode::Normal => "Command mode".bold(),
             Mode::Input => "Input mode".bold(),
-            Mode::Edit => "Edit mode".bold(),
+            Mode::Edit | Mode::Select => "Edit mode".bold(),
             Mode::Popup => "Polynomial finder mode".bold(),
         });
 
@@ -273,9 +284,21 @@ impl App {
                 "stop editing".on_light_blue(),
                 " Up/Down ".bold(),
                 "scroll up/down".on_light_blue(),
+                " Enter ".bold(),
+                "select point".on_light_blue(),
+                " e ".bold(),
+                "edit point".on_light_blue(),
                 " Del ".bold(),
                 "delete point".on_light_blue(),
             ],
+            Mode::Select => vec![
+                " Esc ".bold(),
+                "stop editing".on_light_blue(),
+                " Up/Down ".bold(),
+                "move point up/down".on_light_blue(),
+                " Enter ".bold(),
+                "deselect point".on_light_blue(),
+            ]
         });
 
         let header = Text::from(vec![title, help_message]);
@@ -306,10 +329,9 @@ impl App {
 
     fn render_messages(&mut self, frame: &mut Frame, area: Rect) {
         let border_style = 
-            if self.mode == Mode::Edit { 
-                Color::Yellow.into() 
-            } else { 
-                Style::default() 
+            match self.mode { 
+                Mode::Edit | Mode::Select => Color::Yellow.into(),
+                _ => Style::default() 
             };
         
         let message_block = Block::bordered()
@@ -323,9 +345,16 @@ impl App {
             .iter()
             .map(|[x, y]| display_point([*x, *y]));
 
+        let highlight = 
+            match self.mode{
+                Mode::Select => Style::new().bg(Color::Green),
+                Mode::Edit => Style::new().bg(Color::Yellow),
+                _ => Style::new()
+        };
+
         let message_widget = List::new(messages)
             .block(message_block)
-            .highlight_style(Style::new().bg(Color::Green));
+            .highlight_style(highlight);
 
         frame.render_stateful_widget(message_widget, area, &mut self.message_widget_state);
     }
