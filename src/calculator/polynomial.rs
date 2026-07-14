@@ -1,5 +1,12 @@
 use itertools::Itertools;
-use peroxide::fuga::{LinearAlgebra, Polynomial, Scalable, Shape, matrix, poly};
+use peroxide::fuga::{
+    LinearAlgebra, 
+    Polynomial, 
+    Scalable, 
+    Shape, 
+    matrix, 
+    poly
+};
 
 use crate::calculator::float_parser;
 

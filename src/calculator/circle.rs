@@ -1,7 +1,13 @@
 use std::fmt;
 use std::iter;
 
-use peroxide::fuga::{LinearAlgebra, MutFP, Shape, choose_shorter_string, matrix};
+use peroxide::fuga::{
+    LinearAlgebra, 
+    MutFP, 
+    Shape, 
+    choose_shorter_string, 
+    matrix
+};
 
 use crate::calculator::float_parser;
 

@@ -3,7 +3,13 @@ extern crate peroxide;
 use std::io;
 
 use ratatui::{
-    DefaultTerminal, Frame, crossterm::event::{self, Event, KeyCode}, layout::{Constraint, Layout, Rect}, style::{Color, Style, Stylize}, text::{Line, Text}, widgets::{Block, Clear, List, ListState, Padding, Paragraph}
+    DefaultTerminal, 
+    Frame, 
+    crossterm::event::{self, Event, KeyCode}, 
+    layout::{Constraint, Layout, Rect}, 
+    style::{Color, Style, Stylize}, 
+    text::{Line, Text}, 
+    widgets::{Block, Clear, List, ListState, Padding, Paragraph}
 };
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;

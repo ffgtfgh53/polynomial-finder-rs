@@ -1,4 +1,5 @@
 use std::error;
+
 use peroxide::fuga::choose_shorter_string;
 use regex::Regex;
 
