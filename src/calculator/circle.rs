@@ -7,7 +7,12 @@ use peroxide::fuga::{
     matrix
 };
 
-use crate::structures::{CalulateResult, Circle, PointsVector, Split2DArray as _};
+use crate::structures::{
+    CalulateResult, 
+    Circle, 
+    PointsVector, 
+    Split2DArray as _
+};
 
 impl TryFrom<&PointsVector> for Circle {
     type Error = String;

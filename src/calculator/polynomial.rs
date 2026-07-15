@@ -1,4 +1,5 @@
 use itertools::Itertools as _;
+
 use peroxide::fuga::{
     LinearAlgebra as _, 
     Polynomial, 
@@ -8,7 +9,11 @@ use peroxide::fuga::{
     poly
 };
 
-use crate::structures::{CalulateResult, PointsVector, Split2DArray as _};
+use crate::structures::{
+    CalulateResult, 
+    PointsVector, 
+    Split2DArray as _
+};
 
 impl TryFrom<&PointsVector> for Polynomial {
     type Error = String;

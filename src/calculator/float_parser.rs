@@ -1,4 +1,5 @@
 use peroxide::fuga::choose_shorter_string;
+
 use regex::Regex;
 
 #[expect(clippy::cast_possible_truncation, reason = "We deliberately want to lose precision of imprecise floating point operations")]

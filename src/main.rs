@@ -1,9 +1,5 @@
-#![warn(clippy::pedantic)]
-
 mod calculator;
 mod structures;
-
-extern crate peroxide;
 
 use std::io;
 
@@ -12,16 +8,44 @@ use peroxide::fuga::Polynomial;
 use ratatui::{
     DefaultTerminal, 
     Frame, 
-    crossterm::event::{self, Event, KeyCode}, 
-    layout::{Constraint, Layout, Rect}, 
-    style::{Color, Style, Stylize as _}, 
-    text::{Line, Text}, 
-    widgets::{Block, Clear, List, ListState, Padding, Paragraph}
+    crossterm::event::{
+        self, 
+        Event, 
+        KeyCode
+    }, 
+    layout::{
+        Constraint, 
+        Layout, 
+        Rect
+    }, 
+    style::{
+        Color, 
+        Style, 
+        Stylize as _
+    }, 
+    text::{
+        Line, 
+        Text
+    }, 
+    widgets::{
+        Block, 
+        Clear, 
+        List, 
+        ListState, 
+        Padding, 
+        Paragraph
+    }
 };
+
 use tui_input::backend::crossterm::EventHandler as _;
 use tui_input::Input;
 
-use crate::structures::{Area, CalulateResult as _, Circle, PointsVector};
+use crate::structures::{
+    Area, 
+    CalulateResult as _, 
+    Circle, 
+    PointsVector
+};
 
 fn main() -> io::Result<()> {
     ratatui::run(|t| App::default().run(t))

@@ -3,7 +3,12 @@ use std::iter::zip;
 use itertools::Itertools as _;
 
 use crate::calculator::float_parser;
-use crate::structures::{Area, CalulateResult, PointsVector, Split2DArray as _};
+use crate::structures::{
+    Area, 
+    CalulateResult, 
+    PointsVector, 
+    Split2DArray as _
+};
 
 impl TryFrom<&PointsVector> for Area {
     type Error = String;
