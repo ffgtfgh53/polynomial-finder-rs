@@ -1,8 +1,7 @@
-#![allow(clippy::cast_possible_truncation)]
-
 use peroxide::fuga::choose_shorter_string;
 use regex::Regex;
 
+#[expect(clippy::cast_possible_truncation, reason = "We deliberately want to lose precision of imprecise floating point operations")]
 pub fn display_float(f: f64) -> String {
     choose_shorter_string(
         format!("{}", f as f32), 
@@ -15,7 +14,8 @@ pub fn display_point([x, y]: [f64;2]) -> String {
 }
 
 pub fn get_points(input: &str) -> Option<[f64;2]> {
-    let re = Regex::new(r"(-?\d+(\.\d+)?)[^\d\.]+?(-?\d+(\.\d+)?)").unwrap(); // should always compile properly
+    #[expect(clippy::unwrap_used, reason = "Regex is valid and below max size, compilation will always succed")]
+    let re = Regex::new(r"(-?\d+(\.\d+)?)[^\d\.]+?(-?\d+(\.\d+)?)").unwrap(); 
     let cap = re.captures(input)?;
 
     Some([

@@ -9,6 +9,8 @@ pub struct Circle {
 }
 
 /// Similar to that of `peroxide::fuga::Polynomial`
+#[expect(clippy::cast_possible_truncation, reason = "We deliberately want to lose precision of imprecise floating point operations")]
+#[expect(clippy::else_if_without_else, reason = "We want to skip if branch when the midpoint coordinate == 0.0")]
 impl fmt::Display for Circle {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut result = String::new();
@@ -26,7 +28,7 @@ impl fmt::Display for Circle {
                 format!(" + {:.4}", -self.midpoint[0] as f32)
             );
             result.push_str(&temp);
-        };
+        }
 
         result.push_str(")^2 + (y");
         
@@ -42,7 +44,7 @@ impl fmt::Display for Circle {
                 format!(" + {:.4}", -self.midpoint[1] as f32)
             );
             result.push_str(&temp);
-        };
+        }
 
         result.push_str(")^2 = ");
 
@@ -52,7 +54,7 @@ impl fmt::Display for Circle {
         );
         result.push_str(&temp);
 
-        write!(f, "{}", result)
+        write!(f, "{result}")
     }
 }
 

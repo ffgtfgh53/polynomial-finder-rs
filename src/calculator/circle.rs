@@ -1,13 +1,13 @@
 use std::iter;
 
 use peroxide::fuga::{
-    LinearAlgebra, 
-    MutFP, 
+    LinearAlgebra as _, 
+    MutFP as _, 
     Shape, 
     matrix
 };
 
-use crate::structures::{CalulateResult, Circle, PointsVector, Split2DArray};
+use crate::structures::{CalulateResult, Circle, PointsVector, Split2DArray as _};
 
 impl TryFrom<&PointsVector> for Circle {
     type Error = String;
@@ -15,13 +15,13 @@ impl TryFrom<&PointsVector> for Circle {
     fn try_from(value: &PointsVector) -> Result<Self, Self::Error> {
         let (points, to_check) = value
             .split_at_checked(3)
-            .ok_or("Need > 3 points to calculate circle".to_string())?;
+            .ok_or("Need > 3 points to calculate circle".to_owned())?;
 
         let circle = solve_from_points(points.split_2d_array())?;
 
         for point in to_check {
             if !circle.check_point(*point) {
-                Err("No circle that satisfies all points")?;
+                return Err("No circle that satisfies all points".into());
             }
         }
 
@@ -35,12 +35,12 @@ impl CalulateResult for Circle {
     }
 }
 
-#[allow(clippy::many_single_char_names)]
+#[expect(clippy::many_single_char_names, reason = "Using terminology from Polynomial reference")]
 /// Reference: <https://planetcalc.com/8116/>
 // a * v = b => v = a.inv() * b
 fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Circle, String>{
     if x_vals.len() != y_vals.len() {
-        Err("mismatch in length for x_vals and y_vals".to_string())?;
+        return Err("mismatch in length for x_vals and y_vals".to_owned());
     }
 
     let mut a_data = Vec::with_capacity(9);
@@ -60,11 +60,12 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Circle, S
 
     let v = (a.inv() * b).into_vec();
 
+    #[expect(clippy::indexing_slicing, reason = "v will always have 3 elements due to set sizes of a and b")]
     let (x, y, c) = (-v[0], -v[1], v[2]);
     let r = (x.powi(2) + y.powi(2) - c).sqrt();
 
     if x.is_nan() || y.is_nan() || r.is_nan() {
-        Err("Error when constructing circle (repeated or colinear points?)".to_string())
+        Err("Error when constructing circle (repeated or colinear points?)".to_owned())
     } else {
         Ok(Circle::new([x, y], r))
     }

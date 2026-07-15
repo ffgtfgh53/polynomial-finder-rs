@@ -1,16 +1,16 @@
 use std::iter::zip;
 
-use itertools::Itertools;
+use itertools::Itertools as _;
 
 use crate::calculator::float_parser;
-use crate::structures::{Area, CalulateResult, PointsVector, Split2DArray};
+use crate::structures::{Area, CalulateResult, PointsVector, Split2DArray as _};
 
 impl TryFrom<&PointsVector> for Area {
     type Error = String;
 
-    fn try_from(value: &PointsVector) -> Result<Self, Self::Error> {
+    #[inline] fn try_from(value: &PointsVector) -> Result<Self, Self::Error> {
         if value.len() < 3 { 
-            Err("Need > 3 points to calculate area".to_string())?;
+            return Err("Need > 3 points to calculate area".to_owned());
         }
 
         solve_from_points(value.split_2d_array())
@@ -18,19 +18,19 @@ impl TryFrom<&PointsVector> for Area {
 }
 
 impl CalulateResult for Area {
-    /// Return the formatted result or formatted errors
+    /// Return the formatted result or formatted errors.
     /// 
     /// Points given in clockwise order will give A >= 0, and vice versa. Formula also applies to self-overlapping polygons.
     fn calc_from_points(points: &PointsVector) -> Result<String, String> {
         let solved = Area::try_from(points)?;
-        Ok("A = ".to_string() + &float_parser::display_float(solved)) 
+        Ok("A = ".to_owned() + &float_parser::display_float(solved)) 
     }
 }
 
 /// Reference: <https://en.wikipedia.org/wiki/Shoelace_formula#Triangle_formula>
 fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<f64, String>{
     if x_vals.len() != y_vals.len() {
-        return Err("x_vals and y_vals have different lengths".to_string())
+        return Err("x_vals and y_vals have different lengths".to_owned())
     } 
 
     let mut sum = 0.;

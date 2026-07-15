@@ -1,3 +1,8 @@
+#![warn(clippy::pedantic)]
+
+mod calculator;
+mod structures;
+
 extern crate peroxide;
 
 use std::io;
@@ -9,17 +14,14 @@ use ratatui::{
     Frame, 
     crossterm::event::{self, Event, KeyCode}, 
     layout::{Constraint, Layout, Rect}, 
-    style::{Color, Style, Stylize}, 
+    style::{Color, Style, Stylize as _}, 
     text::{Line, Text}, 
     widgets::{Block, Clear, List, ListState, Padding, Paragraph}
 };
-use tui_input::backend::crossterm::EventHandler;
+use tui_input::backend::crossterm::EventHandler as _;
 use tui_input::Input;
 
-use crate::structures::{Area, CalulateResult, Circle, PointsVector};
-
-mod calculator;
-mod structures;
+use crate::structures::{Area, CalulateResult as _, Circle, PointsVector};
 
 fn main() -> io::Result<()> {
     ratatui::run(|t| App::default().run(t))
@@ -27,14 +29,14 @@ fn main() -> io::Result<()> {
 
 #[derive(Debug, Default)]
 struct PopupState {
+    /// Color of popup border
+    color: Style,
     /// Text to show on popup box
     message: String,
     /// Mode before the popup
     pre_popup_mode: Mode,
     /// Title of the popup
     title: String,
-    /// Color of popup border
-    color: Style,
 }
 
 /// App holds the state of the application
@@ -42,24 +44,23 @@ struct PopupState {
 struct App {
     /// Current value of the input box
     input: Input,
+    /// State of the List widget containing messages
+    message_widget_state: ListState,
     /// Current input mode
     mode: Mode,
     /// All points
     points: PointsVector,
-    /// State of the List widget containing messages
-    message_widget_state: ListState,
     /// State of the popup
     popup_state: PopupState
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 enum Mode {
-    #[default]
-    Normal,
-    Input,
     Edit,
-    Select,
+    Input,
+    #[default] Normal,
     Popup,
+    Select,
 }
 
 impl App {
@@ -140,7 +141,7 @@ impl App {
     }
 
     /// positve n scrolls up
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss, reason = "Scroll unlikely to exceed 2^16, negatives are accounted for")]
     fn scroll_points(&mut self, n: i32) {
         if n > 0 {
             self.message_widget_state.scroll_up_by(n as u16);
@@ -148,7 +149,8 @@ impl App {
             self.message_widget_state.scroll_down_by((-n) as u16);
         }
     }
-
+    
+    #[expect(clippy::unwrap_used, reason = "None values will have returned before unwrap")]
     fn move_point(&mut self, up: bool) {
         let selected = self.message_widget_state.selected_mut();
         let next = if up {
@@ -174,6 +176,7 @@ impl App {
     fn insert_point(&mut self) {
         let input = self.input.value_and_reset();
 
+        #[expect(clippy::indexing_slicing, reason = "Widget state should select a valid element index in self.points")]
         if self.mode == Mode::Input {
             if let Some(point) = calculator::float_parser::get_points(&input) {
                 if let Some(n) = self.message_widget_state.selected() {
@@ -186,7 +189,7 @@ impl App {
                 }
             } else {
                 self.start_popup(
-                    "Input Error".to_string(), 
+                    "Input Error".to_owned(), 
                     format!("Cannot get point from input '{input}'"), 
                     Color::Red.into()
                 );
@@ -201,39 +204,38 @@ impl App {
                     title,
                     equation, 
                     Color::Green.into()
-                )
+                );
             },
             Err(err) => {
                 self.start_popup(
-                    "Calculation error".to_string(), 
-                    format!("An error occured: {}", err), 
+                    "Calculation error".to_owned(), 
+                    format!("An error occured: {err}"), 
                     Color::Red.into()
-                )
+                );
             },
-        };
-    }
-
-    fn find_polynomial(&mut self) {
-        self.show_calc_result(
-            "Polynomial equation".to_string(),
-            Polynomial::calc_from_points(&self.points)
-        )
-    }
-
-    fn find_circle(&mut self) {
-        self.show_calc_result(
-            "Circle Equation".to_string(),
-            Circle::calc_from_points(&self.points)
-        )
+        }
     }
 
     fn find_area(&mut self) {
         self.show_calc_result(
-            "Area".to_string(),
+            "Area".to_owned(),
             Area::calc_from_points(&self.points)
-        )
+        );
     }
 
+    fn find_circle(&mut self) {
+        self.show_calc_result(
+            "Circle Equation".to_owned(),
+            Circle::calc_from_points(&self.points)
+        );
+    }
+
+    fn find_polynomial(&mut self) {
+        self.show_calc_result(
+            "Polynomial equation".to_owned(),
+            Polynomial::calc_from_points(&self.points)
+        );
+    }
 
     fn render(&mut self, frame: &mut Frame) {
         let area = frame.area();
@@ -244,6 +246,7 @@ impl App {
         ])
         .areas(area);
 
+        #[expect(clippy::integer_division, clippy::integer_division_remainder_used, reason = "Need integer part of 20%")]
         let popup_area = area.centered(
             Constraint::Percentage(60), 
             Constraint::Length((area.height / 5).max(5)) // max(3, 20%)
@@ -324,6 +327,7 @@ impl App {
             Mode::Input => Color::Yellow.into(),
             _ => Style::default(),
         };
+        #[expect(clippy::cast_possible_truncation, reason = "Scroll amount should not exceed 2^16")]
         let input = Paragraph::new(self.input.value())
             .style(style)
             .scroll((0, scroll as u16))
@@ -334,11 +338,14 @@ impl App {
             // Ratatui hides the cursor unless it's explicitly set. Position the cursor past the
             // end of the input text and one line down from the border to the input line
             let x = self.input.visual_cursor().max(scroll) - scroll + 1;
-            frame.set_cursor_position((area.x + x as u16, area.y + 1))
+            #[expect(clippy::cast_possible_truncation, reason = "scroll will not exceed u16")]
+            frame.set_cursor_position((area.x + x as u16, area.y + 1));
         }
     }
 
     fn render_messages(&mut self, frame: &mut Frame, area: Rect) {
+        use calculator::float_parser::display_point;
+
         let border_style = 
             match self.mode { 
                 Mode::Edit | Mode::Select => Color::Yellow.into(),
@@ -348,13 +355,11 @@ impl App {
         let message_block = Block::bordered()
             .title("Points")
             .border_style(border_style);
-        
-        use calculator::float_parser::display_point;
 
         let messages = self
             .points
             .iter()
-            .map(|[x, y]| display_point([*x, *y]));
+            .map(|&[x, y]| display_point([x, y]));
 
         let highlight = 
             match self.mode{

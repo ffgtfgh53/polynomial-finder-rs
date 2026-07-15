@@ -9,3 +9,44 @@ peroxide = "0.42.0"
 ratatui = "0.30.2"
 regex = "1.13.0"
 tui-input = "0.15.3"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+restriction = { level = "warn", priority = -1 }
+
+blanket_clippy_restriction_lints = "allow"
+
+# Allowlist > Denylist?
+# https://billylevin.dev/posts/clippy-config/
+# Add more when linter picks up more noise
+
+# Pythonic way of using __init__.py, reduces clutter in src/
+mod_module_files = "allow"
+
+# Just use std::
+std_instead_of_core = "allow"
+std_instead_of_alloc = "allow"
+
+# Rust features
+implicit_return = "allow"
+question_mark_used = "allow"
+string_add = "allow"
+
+# Relating to small functions
+doc_paragraphs_missing_punctuation = "allow"
+missing_docs_in_private_items = "allow"
+arbitrary_source_item_ordering = "allow"
+single_call_fn = "allow"
+
+# Unnecessary arithmethic checking
+float_arithmetic = "allow"
+default_numeric_fallback = "allow"
+arithmetic_side_effects = "allow"
+as_conversions = "allow"
+
+# Variable naming conventions
+shadow_reuse = "allow"
+min_ident_chars = "allow"
+
+# Not everything needs to be matched
+wildcard_enum_match_arm = "allow"
