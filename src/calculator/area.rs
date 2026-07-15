@@ -3,20 +3,31 @@ use std::iter::zip;
 use itertools::Itertools;
 
 use crate::calculator::float_parser;
+use crate::structures::{Area, CalulateResult, PointsVector, Split2DArray};
 
-/// Return the formatted Area enclosed by the points.
-/// 
-/// Points given in clockwise order will give A >= 0, and vice versa. Formula also applies to self-overlapping polygons.
-pub fn solve_by_points(points: &[[f64;2]]) -> Result<String, String> {
-    if points.len() < 3 { 
-        Err("Need > 3 points to calculate area".to_string())? 
+impl TryFrom<&PointsVector> for Area {
+    type Error = String;
+
+    fn try_from(value: &PointsVector) -> Result<Self, Self::Error> {
+        if value.len() < 3 { 
+            Err("Need > 3 points to calculate area".to_string())?;
+        }
+
+        solve_from_points(value.split_2d_array())
     }
-
-    let solved = solve_from_points(float_parser::split_points(points))?;
-    Ok("A = ".to_string() + &float_parser::display_float(solved))
 }
 
-/// Reference: https://en.wikipedia.org/wiki/Shoelace_formula#Triangle_formula
+impl CalulateResult for Area {
+    /// Return the formatted result or formatted errors
+    /// 
+    /// Points given in clockwise order will give A >= 0, and vice versa. Formula also applies to self-overlapping polygons.
+    fn calc_from_points(points: &PointsVector) -> Result<String, String> {
+        let solved = Area::try_from(points)?;
+        Ok("A = ".to_string() + &float_parser::display_float(solved)) 
+    }
+}
+
+/// Reference: <https://en.wikipedia.org/wiki/Shoelace_formula#Triangle_formula>
 fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<f64, String>{
     if x_vals.len() != y_vals.len() {
         return Err("x_vals and y_vals have different lengths".to_string())

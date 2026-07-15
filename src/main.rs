@@ -2,6 +2,8 @@ extern crate peroxide;
 
 use std::io;
 
+use peroxide::fuga::Polynomial;
+
 use ratatui::{
     DefaultTerminal, 
     Frame, 
@@ -13,6 +15,8 @@ use ratatui::{
 };
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
+
+use crate::structures::{Area, CalulateResult, Circle, PointsVector};
 
 mod calculator;
 mod structures;
@@ -40,8 +44,8 @@ struct App {
     input: Input,
     /// Current input mode
     mode: Mode,
-    /// History of recorded messages
-    messages: Vec<[f64;2]>,
+    /// All points
+    points: PointsVector,
     /// State of the List widget containing messages
     message_widget_state: ListState,
     /// State of the popup
@@ -73,7 +77,7 @@ impl App {
                         KeyCode::Char('p') => self.find_polynomial(),
                         KeyCode::Char('c') => self.find_circle(),
                         KeyCode::Char('a') => self.find_area(),
-                        KeyCode::Char('d') => self.messages.clear(),
+                        KeyCode::Char('d') => self.points.clear(),
                         KeyCode::Char('q') => return Ok(()), // exit
                         _ => {}
                     },
@@ -106,11 +110,11 @@ impl App {
     }
 
     fn start_input(&mut self) {
-        self.mode = Mode::Input
+        self.mode = Mode::Input;
     }
 
     fn stop_input(&mut self) {
-        self.mode = Mode::Normal
+        self.mode = Mode::Normal;
     }
 
     fn start_popup(&mut self, title: String, message: String, border_color: Style) {
@@ -118,24 +122,25 @@ impl App {
         self.popup_state.message = message;
         self.popup_state.pre_popup_mode = self.mode;
         self.popup_state.color = border_color;
-        self.mode = Mode::Popup
+        self.mode = Mode::Popup;
     }
 
     fn stop_popup(&mut self) {
-        self.mode = self.popup_state.pre_popup_mode
+        self.mode = self.popup_state.pre_popup_mode;
     }
 
     fn start_edit(&mut self) {
         self.message_widget_state.select_first();
-        self.mode = Mode::Edit
+        self.mode = Mode::Edit;
     }
 
     fn stop_edit(&mut self) {
         self.message_widget_state.select(None);
-        self.mode = Mode::Normal
+        self.mode = Mode::Normal;
     }
 
     /// positve n scrolls up
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn scroll_points(&mut self, n: i32) {
         if n > 0 {
             self.message_widget_state.scroll_up_by(n as u16);
@@ -146,25 +151,24 @@ impl App {
 
     fn move_point(&mut self, up: bool) {
         let selected = self.message_widget_state.selected_mut();
-        let next;
-        if up {
+        let next = if up {
             // move index towards 0
-            if selected.unwrap_or(0) == 0 { return };
-            next = selected.unwrap() - 1;
+            if selected.unwrap_or(0) == 0 { return }
+            selected.unwrap() - 1
         } else {
             // move index towards self.messages.len()
-            let lim = self.messages.len();
-            if selected.unwrap_or(lim) + 1 >= lim { return };
-            next = selected.unwrap() + 1;
+            let lim = self.points.len();
+            if selected.unwrap_or(lim) + 1 >= lim { return }
+            selected.unwrap() + 1
         };
-        self.messages.swap(selected.unwrap(), next);
-         *selected = Some(next)
+        self.points.swap(selected.unwrap(), next);
+        *selected = Some(next);
     }
 
     fn delete_selected_point(&mut self) {
         let Some(n) = self.message_widget_state.selected() else { return; };
         // Should not panic since selected item should be in range
-        self.messages.remove(n);
+        self.points.remove(n);
     }
 
     fn insert_point(&mut self) {
@@ -173,17 +177,17 @@ impl App {
         if self.mode == Mode::Input {
             if let Some(point) = calculator::float_parser::get_points(&input) {
                 if let Some(n) = self.message_widget_state.selected() {
-                    self.messages[n] = point;
+                    self.points[n] = point;
                     // Exit 1-time input mode and go back to edit
                     // Just reset to Edit mode instead of re-init edit
-                    self.mode = Mode::Edit
+                    self.mode = Mode::Edit;
                 } else {
-                    self.messages.push(point);
+                    self.points.push(point);
                 }
             } else {
                 self.start_popup(
                     "Input Error".to_string(), 
-                    format!("Cannot get point from input '{}'", input), 
+                    format!("Cannot get point from input '{input}'"), 
                     Color::Red.into()
                 );
             }
@@ -212,21 +216,21 @@ impl App {
     fn find_polynomial(&mut self) {
         self.show_calc_result(
             "Polynomial equation".to_string(),
-            calculator::polynomial::solve_by_points(&self.messages)
+            Polynomial::calc_from_points(&self.points)
         )
     }
 
     fn find_circle(&mut self) {
         self.show_calc_result(
             "Circle Equation".to_string(),
-            calculator::circle::solve_by_points(&self.messages)
+            Circle::calc_from_points(&self.points)
         )
     }
 
     fn find_area(&mut self) {
         self.show_calc_result(
             "Area".to_string(),
-            calculator::area::solve_by_points(&self.messages)
+            Area::calc_from_points(&self.points)
         )
     }
 
@@ -348,13 +352,13 @@ impl App {
         use calculator::float_parser::display_point;
 
         let messages = self
-            .messages
+            .points
             .iter()
             .map(|[x, y]| display_point([*x, *y]));
 
         let highlight = 
             match self.mode{
-                Mode::Select => Style::new().bg(Color::Green),
+                Mode::Select | Mode::Input => Style::new().bg(Color::Green),
                 Mode::Edit => Style::new().bg(Color::Yellow),
                 _ => Style::new()
         };

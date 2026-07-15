@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_truncation)]
+
 use peroxide::fuga::choose_shorter_string;
 use regex::Regex;
 
@@ -21,12 +23,4 @@ pub fn get_points(input: &str) -> Option<[f64;2]> {
         cap.get(1)?.as_str().parse().ok()?,
         cap.get(3)?.as_str().parse().ok()?
     ])
-}
-
-/// Splits a Vec of points to 2 Vec of x and y
-pub fn split_points(points: &[[f64;2]]) -> (Vec<f64>, Vec<f64>) {
-    let x_vals = points.iter().map(|point| point[0]).collect();
-    let y_vals = points.iter().map(|point| point[1]).collect();
-
-    (x_vals, y_vals)
 }

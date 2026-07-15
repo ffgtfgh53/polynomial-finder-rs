@@ -8,30 +8,38 @@ use peroxide::fuga::{
     poly
 };
 
-use crate::calculator::float_parser;
+use crate::structures::{CalulateResult, PointsVector, Split2DArray};
 
-/// Return the formatted polynomial that passes through all the points in `points`
-/// 
-/// Errors will be formatted in a String to be displayed
-pub fn solve_by_points(points: &[[f64;2]]) -> Result<String, String> {
-    if points.is_empty() { 
-        Err("Need > 0 points to calculate".to_string())?
+impl TryFrom<&PointsVector> for Polynomial {
+    type Error = String;
+
+    fn try_from(value: &PointsVector) -> Result<Self, Self::Error> {
+        if value.is_empty() { 
+            Err("Need > 0 points to calculate".to_string())?;
+        }
+        solve_from_points(value.split_2d_array())
     }
-    let solved = solve_from_points(float_parser::split_points(points))?;
-    Ok("f(x) = ".to_string() + &solved.to_string())
 }
 
-/// Generate the coeficients of the equation that satisfies the points in (x, y)
+impl CalulateResult for Polynomial {
+    fn calc_from_points(points: &PointsVector) -> Result<String, String> {
+        Ok("f(x) = ".to_string() + &Polynomial::try_from(points)?.to_string())
+    }
+}
+
+/// Generate the polynomial of the equation that satisfies the points in (x, y)
 /// 
-/// Reference: https://bueler.github.io/numerical/assets/slides/F24/polynonewt.pdf
+/// Reference: <https://bueler.github.io/numerical/assets/slides/F24/polynonewt.pdf>
+#[allow(clippy::cast_possible_truncation)]
 fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Polynomial, String>{
     let n = x_vals.len();
     if n != y_vals.len() { 
         Err("mismatch in length for x_vals and y_vals".to_string())?;
-    };
+    }
 
     let mut a = matrix([1].repeat(n), n, 1, Shape::Col);
     for i in 1..n {
+        #[allow(clippy::cast_possible_wrap)]
         let col = x_vals.iter().map(|val| val.powi(i as i32)).collect();
         a = a.add_col(&col);
     }
@@ -45,12 +53,12 @@ fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Polynomia
         .into_vec()
         .into_iter()
         .rev()
-        .skip_while(|c| c.abs() < f32::EPSILON as f64)
+        .skip_while(|c| c.abs() < f64::from(f32::EPSILON))
         .map(|c| {
             if c.is_nan() { 
                 Err("No suitable polynomial found".to_string()) 
             } else { 
-                Ok(c as f32 as f64) 
+                Ok(f64::from(c as f32)) 
             }
         })
         .try_collect()?;

@@ -7,28 +7,37 @@ use peroxide::fuga::{
     matrix
 };
 
-use crate::structures::Circle;
+use crate::structures::{CalulateResult, Circle, PointsVector, Split2DArray};
 
-use crate::calculator::float_parser;
+impl TryFrom<&PointsVector> for Circle {
+    type Error = String;
 
-/// Return the formatted circle equation that passes through all the points in `points`
-pub fn solve_by_points(points: &[[f64; 2]]) -> Result<String, String> {
-    let (points, to_check) = points
-        .split_at_checked(3)
-        .ok_or("Need > 3 points to calculate circle".to_string())?;
+    fn try_from(value: &PointsVector) -> Result<Self, Self::Error> {
+        let (points, to_check) = value
+            .split_at_checked(3)
+            .ok_or("Need > 3 points to calculate circle".to_string())?;
 
-    let circle = solve_from_points(float_parser::split_points(points))?;
+        let circle = solve_from_points(points.split_2d_array())?;
 
-    for point in to_check {
-        if !circle.check_point(*point) {
-            Err("No circle that satisfies all points")?
+        for point in to_check {
+            if !circle.check_point(*point) {
+                Err("No circle that satisfies all points")?;
+            }
         }
-    }
 
-    Ok(circle.to_string())
+        Ok(circle)
+    }
 }
 
-/// Reference: https://planetcalc.com/8116/
+impl CalulateResult for Circle {
+    fn calc_from_points(points: &PointsVector) -> Result<String, String> {
+        Ok(Circle::try_from(points)?.to_string())
+    }
+}
+
+#[allow(clippy::many_single_char_names)]
+/// Reference: <https://planetcalc.com/8116/>
+// a * v = b => v = a.inv() * b
 fn solve_from_points((x_vals, y_vals): (Vec<f64>, Vec<f64>)) -> Result<Circle, String>{
     if x_vals.len() != y_vals.len() {
         Err("mismatch in length for x_vals and y_vals".to_string())?;
